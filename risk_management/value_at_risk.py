@@ -13,27 +13,6 @@ from scipy.stats import norm
 import statistics
 import scipy.stats as stats
 
-tickers = {
-    'ftse100':['HWDN.L', 'III', 'SPX.L', 'ICP.L', 'ITV.L', 'HLMA.L', 
-               'TW.L', 'ITRK.L', 'EXPN.L', 'RS1.L', 'BDEV.L', 'CRDA.L', 
-               'JMAT.L', 'AUTO', 'STJ.L', 'RMV.L', 'HL.L', 'SN.L', 
-               'HIK.L', 'AVV.L', 'JD.L', 'BKG.L', 'WPP', 'BNZL.L', 
-               'SGE.L', 'ABDN.L', 'SMIN', 'LGEN.L', 'SDR.L', 'AHT', 
-               'REL.L', 'SMT.L', 'SGRO.L', 'LAND', 'SKG.L', 'BRBY.L', 
-               'LSEG.L', 'NXT.L', 'AV.L', 'HSBA.L', 'DGE.L', 'BME', 
-               'UTG', 'AAL', 'PHNX.L', 'BARC.L', 'BT-A.L', 'ABF.L', 
-               'LIN', 'MNDI.L', 'NWG', 'CCH.L', 'RTO.L', 'KGF.L', 
-               'PSON.L', 'CRH', 'TSCO', 'SVT', 'INVR.L', 'BLND.L', 
-               'STAN.L', 'SMDS.L', 'AON', 'RR.L', 'INF.L', 'UU.L', 
-               'IMB.L', 'VOD', 'SBRY.L', 'RIO', 'FLTR', 'EDV', 'MRO', 
-               'ULVR.L', 'DCC.L', 'CPG', 'ANTO.L', 'ADM', 'MGGT.L', 
-               'LLOY.L', 'PRU', 'ENT.L', 'BATS.L', 'RKT.L', 'CNA', 
-               'FRES.L', 'IHG', 'WTB.L', 'SHEL', 'AZN', 'BP.L', 
-               'GLEN.L', 'GSK', 'NG.L', 'IAG', 'SSE.L', 'BA.L', 
-               'OCDO.L', 'PNR', 'DPH.L', 'RMG.L'],
-    'indexes':['^FTSE','^GSPC','^DJI','^IXIC','^GDAXI','^FCHI','^N225','^HSI','000001.SS']
-    }
-
 def portfolio_return(weights, log_returns, trading_days=None):
     if trading_days != None:
         return (np.sum(weights * log_returns.mean()) * trading_days)
@@ -68,7 +47,7 @@ def column_na(df, threshold=0.8, row_na=True):
         return df.dropna(thresh=len(df)*threshold, axis=1)
 
 class Portfolio:
-    def __init__(self, tickers=None, start=None, end=None, trading_days = 250, dropnan=True):
+    def __init__(self, tickers=None, start=None, end=None, trading_days = 250, dropnan=True, threshold=0.8):
         """
         Generate a portfolio from a list of tickers.
         .rawdata: {'Adj Close','Close','High','Low','Open','Volume'}
@@ -85,7 +64,12 @@ class Portfolio:
         Uses yahoo_finance
         -------------------
         example:
-        x = Portfolio(tickers= ['LLOY.L','NWG.L','TSL3.L','TSCO.L','BOIL.AQ'], start=dt.datetime(2000,1,1), end=dt.datetime.today())
+        tickers = tickers.indexes
+        start = dt.datetime(2018,1,1)
+        end = dt.datetime.today()
+        threshold = 0.9
+        
+        x = var.Portfolio(tickers=tickers, start=start, end=end, threshold=threshold)
         """
 # Setting default values to generate quick test instances
     # Use FTSE index if no ticker is provided
@@ -103,7 +87,7 @@ class Portfolio:
 # Retieve the data from YahooFinance        
         self.raw_data = yf.download(self.tickers, start=start, end=end)
         if dropnan ==True:
-            self.raw_data = column_na(self.raw_data)
+            self.raw_data = column_na(self.raw_data, threshold=threshold)
             self.tickers = set([x[1] for x in self.raw_data.columns])
         self.risk_free_rate = yf.download('^TNX')['Adj Close']
 # Quick indication of missing date
