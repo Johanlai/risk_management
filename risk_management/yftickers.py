@@ -52,3 +52,4 @@ tickers = {
     'currencies':['GBPUSD=X','GBPEUR=X','GBPJPY=X','EURUSD=X'],
     'crypto': ['BTC-GBP','ETH-GBP','YFI-GBP','ETH-GBP','MKR-GBP']
     }
+

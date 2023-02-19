@@ -121,7 +121,10 @@ class Portfolio:
         
 
     
-    
+def breaches(returns, est_risk):
+    df = pd.concat([returns,est_risk],axis=1).dropna()
+    df = df[df[0]<df[1]]
+    return df[1].rename('breaches')
 
 def compute_var(returns, alpha, window=None):
     """
