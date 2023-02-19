@@ -13,6 +13,7 @@ from scipy.stats import norm
 import statistics
 import scipy.stats as stats
 
+
 def portfolio_return(weights, log_returns, trading_days=None):
     if trading_days != None:
         return (np.sum(weights * log_returns.mean()) * trading_days)
@@ -45,6 +46,10 @@ def column_na(df, threshold=0.8, row_na=True):
         return df.dropna(thresh=len(df)*threshold, axis=1).dropna()
     else: 
         return df.dropna(thresh=len(df)*threshold, axis=1)
+    
+def compute_log_returns(prices):
+    return np.log(prices/prices.shift(1))
+
 
 class Portfolio:
     def __init__(self, tickers=None, start=None, end=None, trading_days = 250, dropnan=True, threshold=0.8):
@@ -92,7 +97,7 @@ class Portfolio:
         self.risk_free_rate = yf.download('^TNX')['Adj Close']
 # Quick indication of missing date
         print('The data spans {} working days, but has {} observations.'.format(np.busday_count(start.date(),end.date()),len(self.raw_data)))
-        self.log_returns = np.log(self.raw_data['Adj Close'] / self.raw_data['Adj Close'].shift(1))
+        self.log_returns = compute_log_returns(self.raw_data['Adj Close'])
 # Functions for creating portfolio returns and volatilities
     def Efficient_Frontier(self, n=1000, s=10):
         portfolio_returns = []
