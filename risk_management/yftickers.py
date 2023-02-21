@@ -4,7 +4,7 @@ Created on Sat Feb 18 09:13:13 2023
 
 @author: JHL
 """
-
+simple = ['AAPL','GOOG','AMZN']
 ftse100 =['HWDN.L', 'III', 'SPX.L', 'ICP.L', 'ITV.L', 'HLMA.L', 
            'TW.L', 'ITRK.L', 'EXPN.L', 'RS1.L', 'BDEV.L', 'CRDA.L', 
            'JMAT.L', 'AUTO', 'STJ.L', 'RMV.L', 'HL.L', 'SN.L', 
