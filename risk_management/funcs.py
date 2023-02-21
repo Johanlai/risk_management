@@ -9,8 +9,40 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import norm
 
+def portfolio_performance(weights, meanReturns, covMatrix, T=252):
+    """
 
-def MC_sim(data, T=500, sims_count = 100, initial=None, returns_data=False, show_plot=True):
+    Parameters
+    ----------
+    weights : list of floats
+        DESCRIPTION. Weight of each security in the portfolio.
+    meanReturns : series of floats
+        DESCRIPTION. Expected return of each security in the portfolio.
+    covMatrix : df?
+        DESCRIPTION. Covariance matrix of the portfolio securities.
+    T : TYPE, int
+        DESCRIPTION. The default is 252 trading days in a year.
+
+    Returns
+    -------
+    port_returns : float
+        DESCRIPTION. The portfolio return
+    port_stdev : float
+        DESCRIPTION. The portfolio standard deviation
+
+    """
+    port_returns = np.sum(meanReturns*weights)*T
+    port_stdev = np.sqrt(np.dot(weights.T, np.dot(covMatrix, weights)))*np.sqrt(T)
+    return port_returns, port_stdev
+
+def negativeSharpeRatio(weights, meanReturns, covMatrix, riskFreeRate = 0):
+    portRetuns, portStdev = portfolio_performance(weights, meanReturns, covMatrix)
+    return - (portRetuns - riskFreeRate)/portStdev
+
+#def maxShapreRatio(meanReturns, covMatrix, riskFreeRate=0, contraintSet=(0,1)):
+    
+
+def mc_sim(data, T=500, sims_count = 100, initial=None, returns_data=False, show_plot=True):
     if isinstance(data, pd.Series)==True:
         if returns_data==False:
             returns = data.pct_change()
