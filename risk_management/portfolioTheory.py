@@ -88,3 +88,42 @@ def minimizeVariance(meanReturns, covMatrix, constraintSet=(0,1)):
                         method='SLSQP', bounds=bounds, constraints=constraints)
     print(result)
     return result['fun'], [meanReturns.index.values, result['x']]
+
+###### Efficient frontier
+def portfolioReturn(weights, meanReturns, covMatrix):
+        return portfolioPerformance(weights, meanReturns, covMatrix)[0]
+def efficientOpt(meanReturns, covMatrix, returnTarget, constraintSet=(0,1)):
+    """For each returnTarget, we want to optimise the portfolio for min variance"""
+    numAssets = len(meanReturns)
+    args = (meanReturns, covMatrix)
+    constraints = ({'type':'eq', 'fun': lambda x: portfolioReturn(x, meanReturns, covMatrix) - returnTarget},
+                    {'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
+    bound = constraintSet
+    bounds = tuple(bound for asset in range(numAssets))
+    effOpt = sc.minimize(portfolioVariance, numAssets*[1./numAssets], args=args, method = 'SLSQP', bounds=bounds, constraints=constraints)
+    return effOpt
+
+
+##### Results
+def calculatedResults(meanReturns, covMatrix, riskFreeRate=0, constraintSet=(0,1)):
+    """Read in mean, cov matrix, and other financial information
+        Output, Max SR , Min Volatility, efficient frontier """
+    # Max Sharpe Ratio Portfolio
+    maxSR_Portfolio = maxSR(meanReturns, covMatrix)
+    maxSR_returns, maxSR_std = portfolioPerformance(maxSR_Portfolio['x'], meanReturns, covMatrix)
+    maxSR_returns, maxSR_std = round(maxSR_returns*100,2), round(maxSR_std*100,2)
+    maxSR_allocation = pd.DataFrame(maxSR_Portfolio['x'], index=meanReturns.index, columns=['allocation'])
+    maxSR_allocation.allocation = [round(i*100,0) for i in maxSR_allocation.allocation]
+    
+    # Min Volatility Portfolio
+    minVol_Portfolio = minimizeVariance(meanReturns, covMatrix)
+    minVol_returns, minVol_std = portfolioPerformance(minVol_Portfolio['x'], meanReturns, covMatrix)
+    minVol_returns, minVol_std = round(minVol_returns*100,2), round(minVol_std*100,2)
+    minVol_allocation = pd.DataFrame(minVol_Portfolio['x'], index=meanReturns.index, columns=['allocation'])
+    minVol_allocation.allocation = [round(i*100,0) for i in minVol_allocation.allocation]
+    # Efficient Frontier
+    efficientList = []
+    targetReturns = np.linspace(minVol_returns, maxSR_returns, 20)
+    for target in targetReturns:
+        efficientList.append(efficientOpt(meanReturns, covMatrix, target)['fun'])
+    return maxSR_returns, maxSR_std, maxSR_allocation, minVol_returns, minVol_std, minVol_allocation, efficientList
