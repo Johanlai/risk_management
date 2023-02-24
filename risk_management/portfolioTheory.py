@@ -14,40 +14,8 @@ from scipy.optimize import minimize
 import plotly.graph_objects as go
 from scipy import stats
 
-def dropNaNs(df, threshold=0.8, row_na=True, drop_extremes=True):
-    """
-    Parameters
-    ----------
-    df : Any dataframe where some columns have substantial observations missing
-    threshold : TYPE, optional
-        The default is set to remove columns with less than 80% of total oberservations
-    row_na: also removes any rows with missing data for completeness
-    
-    Returns complete data for analysis
-    -------
-
-    """
-    df = df.apply(lambda x: x.replace(0.0,np.nan))
-    names = [x for x in df if df[x].count()<len(df)*threshold]
-    if len(set([x[1] for x in names]))>0:
-        print(set([x[1] for x in names]))
-        print('{} columns were removed because there were less observations than the threshold ({}):'.format(len(set([x[1] for x in names])),threshold))
-        print(df[names].count()['Adj Close'])
-    else:
-        print('No NAs in data')
-    if row_na==True:
-        cleaned = df.dropna(thresh=len(df)*threshold, axis=1).dropna()
-    else: 
-        cleaned = df.dropna(thresh=len(df)*threshold, axis=1)
-    if drop_extremes==True:
-        df = cleaned.pct_change().shift(-1).dropna()
-        extremes = df[(np.abs(stats.zscore(df)) > 25).any(axis=1)].index
-        cleaned = cleaned.drop(index=extremes)
-    return cleaned
-    
-    
 class Portfolio:
-    def __init__(self, tickers=None, start=None, end=None, dropnan=True, na_threshold=0.8, log_returns=True):
+    def __init__(self, tickers=None, start=None, end=None):
         """
         Generate a portfolio from a list of tickers.
         .rawdata: {'Adj Close','Close','High','Low','Open','Volume'}
@@ -73,9 +41,8 @@ class Portfolio:
 # Setting default values to generate quick test instances
     # Use FTSE index if no ticker is provided
         if tickers==None:
-            self.tickers = ['^FTSE','^GSPC']
+            tickers = ['^FTSE','^GSPC']
             print ('No ticker provided, FTSE and S&P 500 was used')
-        else: self.tickers = tickers
     # If no dates specified, use the range from 52 weeks ago till today
         if start==None:
             start = (dt.datetime.today()-dt.timedelta(weeks=52))
@@ -83,18 +50,33 @@ class Portfolio:
         if end==None:
             end = (dt.datetime.today())
             print ('Default end date: {}'.format((dt.datetime.today()).strftime('%d-%m-%y')))
-# Retieve the data from YahooFinance        
-        self.raw_data = yf.download(self.tickers, start=start, end=end)
-        if dropnan ==True:
-            self.raw_data = dropNaNs(self.raw_data, threshold=na_threshold)
-            self.tickers = set([x[1] for x in self.raw_data.columns])
-        self.risk_free_rate = yf.download('^TNX')['Adj Close']
-# Quick indication of missing date
-        print('The data spans {} working days, but has {} observations.'.format(np.busday_count(start.date(),end.date()),len(self.raw_data)))
+        self.tickers = tickers
+        self.start = start
+        self.end = end
+# Retieve the data from YahooFinance 
+    def getData(self):
+        self.raw_data = yf.download(self.tickers, self.start, self.end)
+        self.tickers = self.raw_data['Adj Close'].columns.values
+# Clean data for false extremes and NAs
+    def cleanData(self, threshold=0.8, drop_extremes=True):
+        df = self.raw_data.apply(lambda x: x.replace(0.0,np.nan))
+        names = [x for x in df if df[x].count()<len(df)*threshold]
+        if len(df[names].count()['Adj Close'].keys())>0:
+            print('{} columns were removed because there were less observations than the threshold ({}):'.format(len(df[names].count()['Adj Close'].keys()),threshold))
+            print(df[names].count()['Adj Close'])
+        else:
+            print('No NAs found')
+        self.raw_data = df.dropna(axis=1,thresh=len(df)*threshold)
+        if drop_extremes==True:
+            df = self.raw_data['Adj Close'].pct_change().shift(-1).dropna()
+            extremes = df[df>3].dropna(how='all').index
+            self.raw_data = self.raw_data.drop(index=extremes)
+    def calculate_stats(self, logReturns=True):
+        self.tickers = self.raw_data['Adj Close'].columns.values
         self.returns = self.raw_data['Adj Close'].pct_change().dropna()
-        self.log_returns = np.log(self.raw_data['Adj Close']/self.raw_data['Adj Close'].shift(1)).dropna()
-        if log_returns==True:
-            self.covMatrix = self.log_returns.cov()
+        self.logReturns = np.log(self.raw_data['Adj Close']/self.raw_data['Adj Close'].shift(1)).dropna()
+        if logReturns==True:
+            self.covMatrix = self.logReturns.cov()
         else:
             self.covMatrix = self.returns.cov()
             
