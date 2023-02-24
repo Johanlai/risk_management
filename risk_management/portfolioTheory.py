@@ -34,9 +34,8 @@ class Portfolio:
         tickers = tickers.indexes
         start = dt.datetime(2018,1,1)
         end = dt.datetime.today()
-        threshold = 0.9
         
-        x = var.Portfolio(tickers=tickers, start=start, end=end, threshold=threshold)
+        x = var.Portfolio(tickers=tickers, start=start, end=end)
         """
 # Setting default values to generate quick test instances
     # Use FTSE index if no ticker is provided
