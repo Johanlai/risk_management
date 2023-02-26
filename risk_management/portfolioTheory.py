@@ -57,19 +57,20 @@ class Portfolio:
         self.raw_data = yf.download(self.tickers, self.start, self.end)
         self.tickers = self.raw_data['Adj Close'].columns.values
 # Clean data for false extremes and NAs
-    def cleanData(self, threshold=0.8, drop_extremes=True):
+    def cleanData(self, threshold=0.8, drop_extremes=True, excess=5):
         df = self.raw_data.apply(lambda x: x.replace(0.0,np.nan))
         names = [x for x in df if df[x].count()<len(df)*threshold]
         if len(df[names].count()['Adj Close'].keys())>0:
             print('{} columns were removed because there were less observations than the threshold ({}):'.format(len(df[names].count()['Adj Close'].keys()),threshold))
-            print(df[names].count()['Adj Close'])
+            print(((df[names].count()['Adj Close'])/len(df)).map('{:.2%}'.format))
         else:
             print('No NAs found')
         self.raw_data = df.dropna(axis=1,thresh=len(df)*threshold)
         if drop_extremes==True:
             df = self.raw_data['Adj Close'].pct_change().shift(-1).dropna()
-            extremes = df[df>3].dropna(how='all').index
+            extremes = df[df>excess].dropna(how='all').index
             self.raw_data = self.raw_data.drop(index=extremes)
+        self.tickers = self.raw_data['Adj Close'].columns.values
     def calculate_stats(self, logReturns=True):
         self.tickers = self.raw_data['Adj Close'].columns.values
         self.returns = self.raw_data['Adj Close'].pct_change().dropna()
@@ -78,6 +79,11 @@ class Portfolio:
             self.covMatrix = self.logReturns.cov()
         else:
             self.covMatrix = self.returns.cov()
+    def calculate_PortPerformance(self, weights, T=252):
+        self.port_return_annual = np.sum(self.logReturns.mean()*weights)*T
+        self.port_stdev = np.sqrt(weights.T @ (self.covMatrix @ weights))*np.sqrt(T)
+        self.portReturns = self.logReturns @ weights.T
+
             
 def portfolioPerformance(weights, meanReturns, covMatrix, T=252):
     """
@@ -170,7 +176,7 @@ def minimizeVariance(meanReturns, covMatrix, constraintSet=(0,1)):
         DESCRIPTION. Tickers (alphabetical order) and respective weights.
 
     """
-     
+    np.set_printoptions(suppress=True)
     numAssets = len(meanReturns)
     args = (meanReturns, covMatrix)
     constraints = ({'type': 'eq', 'fun': lambda x: np.sum(x) - 1})
