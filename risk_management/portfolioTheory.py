@@ -57,7 +57,7 @@ class Portfolio:
         self.raw_data = yf.download(self.tickers, self.start, self.end)
         self.tickers = self.raw_data['Adj Close'].columns.values
 # Clean data for false extremes and NAs
-    def cleanData(self, threshold=0.8, drop_extremes=True, excess=5):
+    def cleanData(self, threshold=0.8, drop_extremes=True, excess=5, dateRange=None):
         df = self.raw_data.apply(lambda x: x.replace(0.0,np.nan))
         names = [x for x in df if df[x].count()<len(df)*threshold]
         if len(df[names].count()['Adj Close'].keys())>0:
@@ -70,6 +70,8 @@ class Portfolio:
             df = self.raw_data['Adj Close'].pct_change().shift(-1).dropna()
             extremes = df[df>excess].dropna(how='all').index
             self.raw_data = self.raw_data.drop(index=extremes)
+        if dateRange:
+            self.raw_data = self.raw_data[(dateRange[0]<self.raw_data.index)&(self.raw_data.index<dateRange[1])]
         self.tickers = self.raw_data['Adj Close'].columns.values
     def calculate_stats(self, logReturns=True):
         self.tickers = self.raw_data['Adj Close'].columns.values
