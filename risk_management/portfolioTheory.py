@@ -60,7 +60,7 @@ class Portfolio:
     def cleanData(self, threshold=0.8, drop_extremes=True, excess=5, dateRange=None):
         df = self.raw_data.apply(lambda x: x.replace(0.0,np.nan))
         names = [x for x in df if df[x].count()<len(df)*threshold]
-        if len(df[names].count()['Adj Close'].keys())>0:
+        if len(names)>0:
             print('{} columns were removed because there were less observations than the threshold ({}):'.format(len(df[names].count()['Adj Close'].keys()),threshold))
             print(((df[names].count()['Adj Close'])/len(df)).map('{:.2%}'.format))
         else:
